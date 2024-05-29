@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Overlay Images</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        #overlay_form {
+            margin: 20px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f5f5f5;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            background-color: #fff;
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 3px;
+            background-color: #007bff;
+            color: #fff;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        #startRecording {
+            background-color: #28a745;
+        }
+
+        #video_feed {
+            display: block;
+            margin: 20px auto;
+            max-width: 100%;
+            height: auto;
+        }
+
+        #stopbutton, #stop {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 3px;
+            background-color: #dc3545;
+            color: #fff;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+
+        function stopLiveStream() {
+            $.get("/close", function(data) {
+                console.log("Live stream stopped");
+                // Redirect to the index route
+                window.location.href = "/";
+            });
+        }
+
+            $(window).on('beforeunload', function() {
+                $.get('/close', function(data) {
+                    console.log("Live stream stopped");
+                });
+            });
+
+            function stopStream() {
+            $.get("/close", function(data) {
+                console.log("Live stream stopped");
+            });
+        }
+
+
+    </script>
+</head>
+<body>
+    <h1>Overlay Images</h1>
+
+    <form id="overlay_form" method="POST" action="/result">
+        <button type="submit" name="earring">Toggle Earring</button>
+        <button type="submit" name="necklace">Toggle Necklace</button>
+        <button type="submit" name="nosepin">Toggle Nosepin</button>
+        <button type="submit" name="ring">Toggle Ring</button>
+        <button type="submit" name="braclet">Toggle Braclet</button>
+        <br><br>
+        <label for="earring_select">Select Earring:</label>
+        <select id="earring_select" name="earring_select">
+            {% for option in earring_options %}
+            <option value="{{ option.index }}" {% if option.index == selected_indices[earring] %}selected{% endif %}>
+                {{ option.filename }}
+            </option>
+            {% endfor %}
+        </select>
+
+        <br>
+        <label for="necklace_select">Select Necklace:</label>
+        <select id="necklace_select" name="necklace_select">
+            {% for option in necklace_options %}
+            <option value="{{ option.index }}" {% if option.index == selected_indices[necklace] %}selected{% endif %}>
+                {{ option.filename }}
+            </option>
+            {% endfor %}
+        </select>
+        <br>
+        <label for="nosepin_select">Select Nosepin:</label>
+        <select id="nosepin_select" name="nosepin_select">
+            {% for option in nosepin_options %}
+            <option value="{{ option.index }}" {% if option.index == selected_indices[nosepin] %}selected{% endif %}>
+                {{ option.filename }}
+            </option>
+            {% endfor %}
+        </select>
+        <br>
+        <label for="ring_select">Select Ring:</label>
+        <select id="ring_select" name="ring_select">
+            {% for option in ring_options %}
+            <option value="{{ option.index }}" {% if option.index == selected_indices[ring] %}selected{% endif %}>
+                {{ option.filename }}
+            </option>
+            {% endfor %}
+        </select>
+        <br>
+        <label for="braclet_select">Select Braclet:</label>
+        <select id="braclet_select" name="braclet_select">
+            {% for option in braclet_options %}
+            <option value="{{ option.index }}" {% if option.index == selected_indices[braclet] %}selected{% endif %}>
+                {{ option.filename }}
+            </option>
+            {% endfor %}
+        </select>
+        <br>
+        <button type="submit" name="update_select">Update</button>
+    </form>
+
+        <button id="startRecording" >Start Mike</button>
+        <button id="stopRecording" disabled >Stop Recording</button>
+
+    <br>
+    <input id="stopbutton" type="button" onclick="stopLiveStream()" value="Home Page">
+    <input id="stop" type="button" onclick="stopStream()" value="Stop Stream">
+    <br>
+    <br>
+    <img id="video_feed" width="640" height="480"  src="{{ url_for('video_feed') }}" >
+<!--     width="640" height="480" -->
+    <script>
+        let chunks = [];
+        let mediaRecorder;
+        let audioBlob;
+
+        const startRecording = async () => {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder.ondataavailable = (event) => {
+                chunks.push(event.data);
+            };
+            mediaRecorder.onstop = () => {
+                audioBlob = new Blob(chunks, { type: 'audio/wav' });
+                document.getElementById('stopRecording').disabled = true;
+
+            };
+            mediaRecorder.start();
+            document.getElementById('startRecording').disabled = true;
+            document.getElementById('stopRecording').disabled = false;
+            translateAudio();
+        };
+
+        const stopRecording = () => {
+            mediaRecorder.stop();
+            document.getElementById('startRecording').disabled = false;
+        };
+
+        const convertAudioToText = () => {
+            return new Promise((resolve, reject) => {
+                const audioUrl = URL.createObjectURL(audioBlob);
+                const audio = new Audio(audioUrl);
+
+                const recognition = new webkitSpeechRecognition();
+                recognition.lang = 'en-US';
+
+                let spokenText = ''; // Store the transcribed text
+
+                recognition.onresult = (event) => {
+                    spokenText = event.results[0][0].transcript;
+                    resolve(spokenText); // Resolve the promise with the transcribed text
+                };
+
+                audio.addEventListener('canplaythrough', () => {
+                    recognition.start();
+                });
+            });
+        };
+
+        const translateAudio = async () => {
+
+            if (!audioBlob) {
+                console.log('Audio not available yet. Please record first.');
+                return;
+            }
+
+            const spokenText = await convertAudioToText(); // Wait for the transcribed text
+            console.log('Spoken Text:', spokenText);
+
+            const formData = new FormData();
+            formData.append('spokenText', spokenText);
+            const response = await fetch('/speech', {
+                method: 'POST',
+                body: formData,
+            });
+
+            const translatedText = await response.text();
+            console.log('Translated Text:', translatedText);
+
+            // Re-enable recording after translation is complete
+            document.getElementById('stopRecording').disabled = false;
+            startRecording();
+        };
+
+        document.getElementById('startRecording').addEventListener('click', startRecording);
+        document.getElementById('stopRecording').addEventListener('click', stopRecording);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+mediapipe
+cv2
+os
+openai
+numpy
+builtins
+dlib
+math
+nltk
+imutils
+matplotlib

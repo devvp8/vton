@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Live Stream</title>
+</head>
+<body>
+    <h1>Live Stream</h1>
+   <input id="permissionButton" type="button" onclick="requestPermissionsAndRedirect()" value="Click Here">
+
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script>
+   $(document).ready(function() {
+            $('#permissionButton').click(function() {
+                // Request camera and audio permissions
+                navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+                    .then(function(stream) {
+                        // Permissions granted, redirect to the next page
+                        window.location.href = "/result";
+                    })
+                    .catch(function(error) {
+                        // Permissions denied or error occurred
+                        console.error("Error requesting permissions:", error);
+                    });
+            });
+        });
+</script>
+
+</body>
+</html>
